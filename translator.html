@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5">
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Translator">
+<title>Language Translation Tool</title>
+<style>
+  :root { --bg:#eef3f1; --card:#fff; --ink:#16302b; --muted:#5d7a73; --accent:#0f766e; --line:#cfdcd8; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; }
+  body { margin:0; font-family: Georgia, "Times New Roman", serif; background:var(--bg); color:var(--ink); padding:16px 12px; }
+  main { max-width:900px; margin:0 auto; }
+  h1 { font-size:clamp(1.4rem, 5vw, 1.8rem); margin:0 0 4px; }
+  .sub { color:var(--muted); margin:0 0 16px; font-family: system-ui, sans-serif; font-size:clamp(0.85rem, 2.5vw, 0.95rem); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:clamp(12px, 3vw, 16px); }
+  .row { display:flex; gap:clamp(6px, 2vw, 10px); align-items:center; flex-wrap:wrap; font-family:system-ui,sans-serif; }
+  select, input[type=text], input[type=password] { padding:clamp(8px, 2.5vw, 10px); border:1px solid var(--line); border-radius:8px; font-size:clamp(0.9rem, 2vw, 0.95rem); background:#fff; color:var(--ink); -webkit-appearance: none; appearance: none; }
+  select { flex:1; min-width:100px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230f766e' d='M6 9L1 4h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px; }
+  button { padding:clamp(10px, 2.5vw, 12px) clamp(12px, 3vw, 16px); border:1px solid var(--accent); background:#fff; color:var(--accent); border-radius:8px; font-size:clamp(0.9rem, 2vw, 0.95rem); cursor:pointer; font-weight:500; min-height:44px; touch-action:manipulation; }
+  button.primary { background:var(--accent); color:#fff; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  button:focus-visible, select:focus-visible, textarea:focus-visible, input:focus-visible { outline:3px solid #f59e0b; outline-offset:2px; }
+  button:active { opacity:0.8; }
+  .panes { display:grid; grid-template-columns:1fr 1fr; gap:clamp(10px, 2vw, 14px); margin-top:clamp(10px, 2vw, 14px); }
+  @media (max-width:600px) { 
+    .panes { grid-template-columns:1fr; }
+    .row { gap:clamp(4px, 1.5vw, 6px); }
+    button { min-height:48px; }
+  }
+  textarea, .output { width:100%; min-height:clamp(150px, 40vh, 200px); padding:clamp(10px, 2vw, 12px); border:1px solid var(--line); border-radius:8px; font-size:clamp(0.95rem, 2.5vw, 1.05rem); font-family:inherit; resize:vertical; background:#fff; color:var(--ink); }
+  textarea { -webkit-appearance: none; appearance: none; }
+  .output { background:#f6faf9; white-space:pre-wrap; overflow-wrap:anywhere; user-select:text; -webkit-user-select:text; }
+  .output.err { color:#b91c1c; }
+  .tools { margin-top:clamp(6px, 1.5vw, 8px); display:flex; gap:clamp(6px, 1.5vw, 8px); flex-wrap:wrap; }
+  .tools button { flex:1; min-width:70px; }
+  details { margin-top:clamp(10px, 2vw, 14px); font-family:system-ui,sans-serif; font-size:clamp(0.8rem, 2vw, 0.9rem); }
+  summary { cursor:pointer; color:var(--muted); font-weight:500; padding:8px 0; }
+  .keys { display:grid; gap:clamp(6px, 1.5vw, 8px); margin-top:10px; }
+  .keys input { width:100%; }
+  .note { color:var(--muted); font-size:clamp(0.75rem, 1.5vw, 0.85rem); margin:6px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Language Translation Tool</h1>
+  <p class="sub">Type text, pick languages, and translate.</p>
+
+  <div class="card">
+    <div class="row" style="margin-bottom: clamp(8px, 2vw, 12px);">
+      <select id="from" aria-label="Source language"></select>
+      <button id="swap" title="Swap languages" aria-label="Swap languages" style="flex-shrink: 0;">⇄</button>
+      <select id="to" aria-label="Target language"></select>
+    </div>
+    <div class="row">
+      <select id="provider" aria-label="Translation service" style="width: 100%; max-width: 100%;">
+        <option value="mymemory">MyMemory (free, no key)</option>
+        <option value="google">Google Translate (API key)</option>
+        <option value="microsoft">Microsoft Translator (API key)</option>
+      </select>
+    </div>
+
+    <div class="panes">
+      <div>
+        <textarea id="input" placeholder="Enter text to translate" maxlength="5000"></textarea>
+        <div class="row tools">
+          <button id="listenIn">Listen</button>
+          <button id="clear">Clear</button>
+        </div>
+      </div>
+      <div>
+        <div id="output" class="output" aria-live="polite">Translation will appear here.</div>
+        <div class="row tools">
+          <button id="copy" disabled>Copy</button>
+          <button id="listenOut" disabled>Listen</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:clamp(10px, 2vw, 14px); flex-direction: column; gap: 0;">
+      <button id="go" class="primary" style="width: 100%; margin-bottom: 8px;">Translate</button>
+      <span id="status" class="note" style="text-align: center;"></span>
+    </div>
+
+    <details>
+      <summary>API keys (for Google / Microsoft)</summary>
+      <div class="keys">
+        <input type="password" id="gKey" placeholder="Google Cloud Translation API key">
+        <input type="password" id="mKey" placeholder="Azure Translator key">
+        <input type="text" id="mRegion" placeholder="Azure region (e.g. centralindia)">
+      </div>
+      <p class="note">Keys stay in this page only and are not saved. In a real project, call the API from a backend so keys are never exposed in the browser.</p>
+    </details>
+  </div>
+</main>
+
+<script>
+// ---- Languages: code -> name (edit this list to add/remove languages) ----
+const LANGS = {
+  en:"English", hi:"Hindi", bn:"Bengali", ta:"Tamil", te:"Telugu", mr:"Marathi", gu:"Gujarati",
+  kn:"Kannada", pa:"Punjabi", ur:"Urdu", es:"Spanish", fr:"French", de:"German", it:"Italian",
+  pt:"Portuguese", ru:"Russian", ja:"Japanese", ko:"Korean", zh:"Chinese", ar:"Arabic"
+};
+// Codes differ slightly per service
+const CODE_FIX = {
+  google:    { zh:"zh-CN" },
+  microsoft: { zh:"zh-Hans" },
+  mymemory:  { zh:"zh-CN" }
+};
+// Voices for text-to-speech
+const TTS_LOCALE = { en:"en-US", hi:"hi-IN", bn:"bn-IN", ta:"ta-IN", te:"te-IN", mr:"mr-IN", gu:"gu-IN",
+  kn:"kn-IN", pa:"pa-IN", ur:"ur-PK", es:"es-ES", fr:"fr-FR", de:"de-DE", it:"it-IT",
+  pt:"pt-PT", ru:"ru-RU", ja:"ja-JP", ko:"ko-KR", zh:"zh-CN", ar:"ar-SA" };
+
+const $ = id => document.getElementById(id);
+const fromEl = $("from"), toEl = $("to"), inEl = $("input"), outEl = $("output");
+let lastTranslation = "";
+
+for (const [code, name] of Object.entries(LANGS)) {
+  fromEl.add(new Option(name, code));
+  toEl.add(new Option(name, code));
+}
+fromEl.value = "en"; toEl.value = "hi";
+
+const code = (provider, c) => (CODE_FIX[provider] && CODE_FIX[provider][c]) || c;
+
+// ---- Translation services ----
+async function viaMyMemory(text, from, to) {
+  const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) +
+              "&langpair=" + code("mymemory", from) + "|" + code("mymemory", to);
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("MyMemory request failed (" + r.status + ")");
+  const d = await r.json();
+  if (d.responseStatus !== 200) throw new Error(d.responseDetails || "MyMemory error");
+  return d.responseData.translatedText;
+}
+
+async function viaGoogle(text, from, to) {
+  const key = $("gKey").value.trim();
+  if (!key) throw new Error("Enter your Google API key under 'API keys'.");
+  const r = await fetch("https://translation.googleapis.com/language/translate/v2?key=" + encodeURIComponent(key), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ q: text, source: code("google", from), target: code("google", to), format: "text" })
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error?.message || "Google request failed");
+  return d.data.translations[0].translatedText;
+}
+
+async function viaMicrosoft(text, from, to) {
+  const key = $("mKey").value.trim(), region = $("mRegion").value.trim();
+  if (!key || !region) throw new Error("Enter your Azure key and region under 'API keys'.");
+  const url = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=" +
+              code("microsoft", from) + "&to=" + code("microsoft", to);
+  const r = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Ocp-Apim-Subscription-Key": key,
+      "Ocp-Apim-Subscription-Region": region,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify([{ Text: text }])
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error?.message || "Microsoft request failed");
+  return d[0].translations[0].text;
+}
+
+const PROVIDERS = { mymemory: viaMyMemory, google: viaGoogle, microsoft: viaMicrosoft };
+
+// ---- UI actions ----
+async function translate() {
+  const text = inEl.value.trim();
+  if (!text) { show("Enter some text first.", true); return; }
+  if (fromEl.value === toEl.value) { show(text); return; }
+  $("go").disabled = true; $("status").textContent = "Translating…";
+  try {
+    const result = await PROVIDERS[$("provider").value](text, fromEl.value, toEl.value);
+    show(result);
+  } catch (e) {
+    show(e.message || "Something went wrong. Try again.", true);
+  } finally {
+    $("go").disabled = false; $("status").textContent = "";
+  }
+}
+
+function show(text, isError = false) {
+  outEl.textContent = text;
+  outEl.classList.toggle("err", isError);
+  lastTranslation = isError ? "" : text;
+  $("copy").disabled = $("listenOut").disabled = !lastTranslation;
+}
+
+function speak(text, langCode) {
+  if (!("speechSynthesis" in window)) { $("status").textContent = "Speech is not supported in this browser."; return; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = TTS_LOCALE[langCode] || langCode;
+  speechSynthesis.speak(u);
+}
+
+$("go").onclick = translate;
+inEl.addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); translate(); } });
+// Prevent text input issues on mobile
+document.addEventListener("touchstart", () => {}, { passive: true });
+$("swap").onclick = () => {
+  [fromEl.value, toEl.value] = [toEl.value, fromEl.value];
+  if (lastTranslation) { inEl.value = lastTranslation; show("Translation will appear here."); }
+};
+$("clear").onclick = () => { inEl.value = ""; show("Translation will appear here."); lastTranslation = ""; $("copy").disabled = $("listenOut").disabled = true; };
+$("copy").onclick = async () => {
+  try { await navigator.clipboard.writeText(lastTranslation); $("status").textContent = "Copied."; }
+  catch { $("status").textContent = "Copy failed. Select the text and copy manually."; }
+  setTimeout(() => $("status").textContent = "", 1800);
+};
+$("listenIn").onclick  = () => inEl.value.trim() && speak(inEl.value, fromEl.value);
+$("listenOut").onclick = () => lastTranslation && speak(lastTranslation, toEl.value);
+</script>
+</body>
+</html>
